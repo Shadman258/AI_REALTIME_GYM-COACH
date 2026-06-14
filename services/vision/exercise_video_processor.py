@@ -52,12 +52,26 @@ class VideoProcessorClass(VideoProcessorBase):
 
         except Exception as e:
             import traceback
+            import streamlit as st
 
-            traceback.print_exc()
+            error_message = traceback.format_exc()
 
-            raise RuntimeError(
-                f"MediaPipe init failed: {e}"
+            st.error(
+                f"""
+        MediaPipe Initialization Failed
+
+        Model:
+        {MODEL_PATH}
+
+        Error:
+        {str(e)}
+
+        Traceback:
+        {error_message}
+        """
             )
+
+            st.stop()
 
         self._detectors = {
             "Squats": SquatDetector(),
