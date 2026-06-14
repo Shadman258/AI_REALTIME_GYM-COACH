@@ -13,16 +13,27 @@ from detectors.biceps_curl import BicepsCurlDetector
 from detectors.shoulder_press import ShoulderPressDetector
 from detectors.lunges import LungesDetector
 from services.config.workout_config import POSE_CONNECTIONS
-
+from pathlib import Path
 
 class VideoProcessorClass(VideoProcessorBase):
     def __init__(self):
         self._lock = threading.Lock()
         self._latest_metrics = None
         self._exercise_type = "Squats"
+        BASE_DIR = Path(__file__).resolve().parents[2]
+        MODEL_PATH = (
+            BASE_DIR
+            / "ml_models"
+            / "pose_landmarker_full.task"
+        )
+        if not MODEL_PATH.exists():
+            raise FileNotFoundError(
+                f"Model not found: {MODEL_PATH}"
+            )
 
-        model_path = os.path.join(os.getcwd(), "ml_models", "pose_landmarker_full.task")
-        base_option = python.BaseOptions(model_asset_path=model_path)
+        base_option = python.BaseOptions(
+            model_asset_path=str(MODEL_PATH)
+        )
 
         options = vision.PoseLandmarkerOptions(
             base_options=base_option,
@@ -33,7 +44,20 @@ class VideoProcessorClass(VideoProcessorBase):
             output_segmentation_masks=False
         )
 
-        self._landmarker = vision.PoseLandmarker.create_from_options(options)
+        try:
+            self._landmarker = (
+                vision.PoseLandmarker
+                .create_from_options(options)
+            )
+
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+
+            raise RuntimeError(
+                f"MediaPipe init failed: {e}"
+            )
 
         self._detectors = {
             "Squats": SquatDetector(),
